@@ -1,0 +1,1 @@
+Today we are testing a AI transcription system. The goal is compare the AI output with correct transcript and calculate word error rate and character error rate.

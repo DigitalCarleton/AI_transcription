@@ -1,0 +1,62 @@
+Transcribe only; do not summarize, translate, or explain.
+Process exactly the records I provide. Each input record has record_id, item_id, item_web_url, image_url, and metadata.
+For each record, open image_url and transcribe the manuscript faithfully.
+
+Goal:
+Create a faithful diplomatic transcription that preserves the visible document structure. 
+Use HTML when structure matters, especially for tables, columns, ruled account-book pages, marginal notes, large brackets/braces, superscripts, insertions, deletions, and multi-line groupings.
+
+Transcription rules:
+1) Preserve original line order, spelling, capitalization, punctuation, abbreviations, and apparent word spacing as much as possible.
+2) Do not modernize wording and do not infer missing text.
+3) Preserve layout using semantic HTML fragments:
+   - Use <table>, <thead>, <tbody>, <tr>, <th>, and <td> for tabular pages.
+   - Use <br> inside cells or lines when a cell contains multiple manuscript lines.
+   - Use <div class="line">...</div> for non-table line-by-line text.
+   - Do not omit visible manuscript brackets, braces, or long grouping marks. If a bracket/brace groups multiple lines, encode it explicitly as:
+     <div class="bracket-group"><div class="bracket-mark">{</div><div class="bracket-content">grouped transcription lines here</div></div>
+     Use } instead of { when the visible mark opens toward the other direction.
+   - For small inline brackets or braces, use <span class="bracket">[visible bracket]</span>, <span class="brace">{visible brace}</span>, or the literal bracket/brace characters.
+   - If the exact bracket shape is unclear but a grouping mark is visible, include <span class="bracket">[visible grouping mark]</span> and mention it in layout_notes.
+   - Preserve marginal notes and side columns when visible. Use <div class="page-spread">, <section class="page">, <aside class="margin-note">, and <div class="main-text"> when they help represent the manuscript layout.
+   - Preserve visible heading structure. Use <h1>, <h2>, or <h3> for manuscript headings/titles such as parish names, meeting titles, dates, or section labels when they are visually set apart.
+   - Preserve visibly emphasized writing. Use <strong>...</strong> for heavier/bolder text, <em>...</em> for visually distinct italic or slanted emphasis, and <span class="large">...</span> for unusually large text.
+   - Preserve name lists, office-holder lists, and other multi-column lists. Use <div class="list-columns"><div>left column lines</div><div>right column lines</div></div> when names are written in columns rather than one continuous paragraph.
+   - Preserve ruled or separated regions. Use <hr> for horizontal rules and <div class="ruled-section">...</div> for text that appears inside ruled lines or bounded manuscript areas.
+   - Use <sup>...</sup> for superscript, <del>...</del> for struck text, and <ins>...</ins> for insertions when visible.
+   - Do not output a full HTML document. Do not include <!doctype>, <html>, <head>, <body>, CSS, or JavaScript.
+   - IMPORTANT for valid JSONL: use single quotes for all HTML attributes inside transcription_html, for example <div class='line'>text</div>. Do not use unescaped double quotes inside JSON string values.
+4) Keep uncertain readings in the HTML using <span class="unclear">reading?</span> when there is a plausible reading.
+5) Use [illegible] for unreadable words and [blank] for intentionally blank visible fields only when relevant.
+6) Do not add CSS, Markdown, commentary, summaries, or interpretation.
+7) add a [?] after a word that is uncertain 
+  
+Return a JSONL file that is available to download.
+Return exactly N lines, where N is the number of input records.
+Each line must be one valid JSON object.
+Each output object must correspond to one input record_id.
+Do not wrap the output in a JSON array.
+Do not use Markdown code fences.
+
+Schema for each JSONL line:
+{
+  "record_id": "<string>",
+  "item_id": <int>,
+  "item_web_url": "<string>",
+  "image_url": "<string>",
+  "transcription_html": "<string>",
+  "transcription_plain": "<string>",
+  "uncertainty_notes": ["<string>", "..."],
+  "layout_notes": ["<string>", "..."],
+  "confidence": "low|medium|high"
+}
+
+If an image is inaccessible, still return that record with:
+- transcription_html: ""
+- transcription_plain: ""
+- confidence: "low"
+- uncertainty_notes explaining the access failure.
+- layout_notes: []
+
+No markdown. No commentary. The output must be valid JSONL: one JSON object per line.
+Before returning, verify that every line can be parsed as JSON. In particular, all double quotes inside string values must be escaped or avoided.

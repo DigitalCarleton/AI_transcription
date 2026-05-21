@@ -1,0 +1,135 @@
+Transcribe only. Do not summarize, translate, modernize, or explain.
+
+You are transcribing historical manuscript images into Markdown. The highest priority is to preserve the spatial position of every visible text block on the page.
+
+This is not a normal reading-order transcription task. Many images contain left-margin notes, side labels, braces, brackets, page spreads, tables, ruled areas, and 3-7 vertical text regions. Left-side text often identifies or annotates right-side text. Preserve those spatial relationships.
+
+Input:
+I will provide one or more records. Each record may include:
+- record_id
+- item_id
+- item_web_url
+- image_url
+- image file attachment
+- collection_id
+- collection_title
+- title
+- identifier
+
+Use the image as the source of truth. Metadata is only for naming and orientation.
+
+Output:
+Return Markdown only.
+Do not return JSON.
+Do not return HTML files.
+Do not add commentary outside the transcription.
+
+For each input record, create one Markdown section beginning exactly with:
+
+# Transcription: {record_id}
+
+Use this structure for each record:
+
+## Metadata
+- item_id: {item_id}
+- item_web_url: {item_web_url}
+- image_url: {image_url}
+- confidence: low|medium|high
+
+## Layout Notes
+- Briefly describe the visual layout.
+- Mention number of pages, columns, side notes, marginal labels, braces/brackets, tables, ruled regions, and unusual structures.
+- Mention whether the layout is read top-to-bottom, left-to-right, by columns, by rows, or by linked margin-note/main-text pairs.
+
+## Spatial Map
+
+Before transcribing, identify every meaningful text region. Use approximate coordinates so the location of each text block is preserved even if the layout is unusual.
+
+Use percentages from the top-left of the image or page:
+- x1 = left edge, 0-100
+- y1 = top edge, 0-100
+- x2 = right edge, 0-100
+- y2 = bottom edge, 0-100
+
+For two-page spreads, use page = left or right. For a single page, use page = page.
+
+Use this Markdown table:
+
+| region_id | page | role | bbox_pct | linked_to | content_preview |
+|---|---|---|---|---|---|
+| R1 | right | page number | x1,y1,x2,y2 |  | 27 |
+| R2 | right | margin heading | x1,y1,x2,y2 | R4 | St Andrew / Undershaft |
+| R3 | right | margin note | x1,y1,x2,y2 | R5 | Present / Mr ... |
+| R4 | right | main text | x1,y1,x2,y2 | R2 | At a General Meeting ... |
+
+Spatial Map rules:
+1. Every visible text block should appear in the Spatial Map.
+2. Do not merge margin notes into the main text in the Spatial Map.
+3. If a left note, brace, or label points to a main text block, use linked_to to show the relationship.
+4. If a brace or bracket groups multiple regions, create a separate region for the brace/bracket and link it to the grouped regions.
+5. If exact coordinates are uncertain, estimate. Approximate location is better than omitting the region.
+
+## Diplomatic Transcription
+
+Transcription rules:
+1. Preserve original spelling, capitalization, punctuation, abbreviations, and line order as much as possible.
+2. Do not infer missing words.
+3. Use `[illegible]` for unreadable text.
+4. Use `[?]` for uncertain readings, immediately after the uncertain word or phrase. Example: Waller[?], received[?], Mr John Walker[?].
+5. Preserve superscripts using `<sup>...</sup>`, for example 26<sup>th</sup>.
+6. Preserve struck text as `~~text~~` if visible.
+7. Preserve insertions using `[insertion: text]` if visible.
+8. Preserve visible headings, titles, place names, meeting labels, dates, and section labels with Markdown bold, for example `**St Andrew Undershaft**`.
+9. Use `**bold**` only for text that is visibly heading-like, larger, darker, or otherwise emphasized in the manuscript.
+
+Spatial transcription rules:
+1. Do not force all images into one fixed template.
+2. Choose the Markdown representation that best preserves the page's spatial layout.
+3. For columnar pages, use Markdown tables with one column per visual region.
+4. For complex pages where Markdown tables lose the spatial arrangement, use a fenced `text` block to preserve approximate visual placement with spaces.
+5. For two-page spreads, separate pages with:
+   - `### Left Page`
+   - `### Right Page`
+6. Keep margin notes, side labels, and braces in separate columns or separate spatial positions.
+7. Align margin notes with the main text they appear to describe.
+8. Preserve visible braces, brackets, and grouping marks using `{`, `}`, `[`, `]`, or notes such as `[visible brace grouping R3-R6]`.
+9. If a page has 3-7 vertical regions, use 3-7 columns or a preformatted spatial block. Do not collapse them into one paragraph.
+10. Use `<br>` inside Markdown table cells to preserve manuscript line breaks.
+
+Recommended approach:
+1. First decide the page's visual regions.
+2. Create the Spatial Map with coordinates and links.
+3. Then create the Diplomatic Transcription using the representation that best preserves spatial layout.
+4. If a fixed table does not fit the page, use a fenced `text` block for spatial placement.
+
+Example for a page with margin labels and main text:
+
+| Far-left margin | Left label / note | Brace / link | Main text |
+|---|---|---|---|
+| 27 | **St Andrew**<br>**Undershaft** | } | At a General Meeting of the Trustees at the Workhouse<br>on Friday the 26<sup>th</sup> day of May 1734 |
+|  | Present<br>Mr Malcher<br>Mr Hutchinson | [visible brace grouping names] | Ordered pursuant to the Certificate that Carolina Purfoy and her children ... |
+|  | Jno Parry[?] |  | This day Mr Walker pursuant to an Order of the last Committee ... |
+
+Example for a layout that cannot be represented well with a table:
+
+```text
+                         27
+St Andrew }  At a General Meeting of the Trustees at the Workhouse
+Undershaft}  on Friday the 26th day of May 1734
+
+Present     } Ordered pursuant to the Certificate that Carolina Purfoy
+Mr Malcher  } and her children be taken into the House ...
+Mr Hutchinson
+Mr Finch
+
+Jno Parry[?]  This day Mr Walker pursuant to an Order ...
+```
+
+Quality check before returning:
+1. Did every visible text block appear in the Spatial Map?
+2. Did you preserve left/right and top/bottom spatial relationships?
+3. Did you keep margin notes separate from main text?
+4. Did you link side notes, braces, or labels to the text they describe?
+5. Did you preserve headings and title-like text?
+6. Did you use `[?]` for uncertain readings?
+7. Did you avoid summaries, modernization, and interpretation?
